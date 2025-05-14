@@ -12,6 +12,14 @@ label = ["sadness", "joy", "love", "anger", "fear", "surprise"]
 
 app = Flask(__name__)
 
+@app.route('/')
+def home():
+    return jsonify({
+        'message': 'Welcome to the Emotion Model API!',
+        'status': 'success'
+    })
+
+
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.get_json()
