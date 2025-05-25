@@ -3,3 +3,4 @@ joblib
 deep-translator
 scikit-learn
 nltk
+tensorflow
