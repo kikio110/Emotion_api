@@ -17,8 +17,9 @@ output_details = interpreter.get_output_details()
 
 # Load tokenizer
 with open("tokenizer.json") as f:
-    data = json.load(f)
+    data = f.read()  # ambil sebagai string, bukan json.load()
     tokenizer = tokenizer_from_json(data)
+
 
 # Label kategori (sesuaikan dengan modelmu)
 label = ["sadness", "joy", "love", "anger", "fear", "surprise"]
@@ -67,8 +68,7 @@ def predict():
         emosi = label[predicted_index]
 
         return jsonify({
-            'kalimat': kalimat_asli,
-            'translated': kalimat_terjemahan,
+            'label_prediksi': predicted_index,
             'emosi': emosi
         })
 
