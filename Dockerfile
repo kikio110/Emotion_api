@@ -1,17 +1,13 @@
-# Gunakan image Python resmi
-FROM python:3.10-slim
+FROM python:3.10
 
-# Set direktori kerja di dalam container
 WORKDIR /app
 
-# Salin semua file ke container
 COPY . /app
 
-# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port Flask default
-EXPOSE 5000
+RUN python -m nltk.downloader punkt averaged_perceptron_tagger wordnet stopwords
 
-# Jalankan aplikasi
-CMD ["python", "app.py"]
+ENV FLASK_APP=app.py
+
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]

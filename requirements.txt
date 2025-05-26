@@ -1,5 +1,5 @@
 flask
 joblib
-deep-translator
-scikit-learn
+deep-translator 
 nltk
+tensorflow

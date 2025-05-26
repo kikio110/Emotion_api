@@ -1,13 +1,27 @@
 from flask import Flask, request, jsonify
-import joblib
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import tokenizer_from_json
 from deep_translator import GoogleTranslator
+import json
 from pre import *
 
-# Load model dan vectorizer
-naive_bayes = joblib.load('naive_bayes_model.joblib')
-tfidf = joblib.load('tfidf_vectorizer.joblib')
+# Load TFLite model
+interpreter = tf.lite.Interpreter(model_path="model_lstm.tflite")
+interpreter.allocate_tensors()
 
-# Label emosi
+# Ambil detail input/output
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
+# Load tokenizer
+with open("tokenizer.json") as f:
+    data = f.read()  # ambil sebagai string, bukan json.load()
+    tokenizer = tokenizer_from_json(data)
+
+
+# Label kategori (sesuaikan dengan modelmu)
 label = ["sadness", "joy", "love", "anger", "fear", "surprise"]
 
 app = Flask(__name__)
@@ -15,7 +29,7 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     return jsonify({
-        'message': 'Welcome to the Emotion Model API!',
+        'message': 'Welcome to the Emotion Model API using TFLite!',
         'status': 'success'
     })
 
@@ -41,21 +55,25 @@ def predict():
         kalimat_lemmatized = lemmatizationText(kalimat_filtered)
         kalimat_final = toSentence(kalimat_lemmatized)
 
-        # TF-IDF dan prediksi
-        X_input = tfidf.transform([kalimat_final])
-        prediksi = naive_bayes.predict(X_input.toarray())[0]
-        emosi = label[prediksi]
+        # Tokenizing dan padding
+        sequence = tokenizer.texts_to_sequences([kalimat_final])
+        input_data = pad_sequences(sequence, maxlen=200, padding='post')
+
+        # Prediksi dengan model TFLite
+        interpreter.set_tensor(input_details[0]['index'], input_data.astype(np.float32))
+        interpreter.invoke()
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+
+        predicted_index = int(np.argmax(output_data))
+        emosi = label[predicted_index]
 
         return jsonify({
-            'label_prediksi': int(prediksi),
+            'label_prediksi': predicted_index,
             'emosi': emosi
         })
 
     except Exception as e:
-        # Print or log the error so you can see it
-        print(f"❌ Error in /predict: {e}")
-        return jsonify({"error": "Internal server error", "message": str(e)}), 500
-
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
